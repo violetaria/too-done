@@ -5,7 +5,7 @@ gemspec
 
 gem "activerecord"
 gem "sqlite3"
-gem "vedeu"
+gem "thor"
 
 group :development do
   gem "pry"
