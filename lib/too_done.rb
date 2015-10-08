@@ -1,8 +1,7 @@
-LOGGING = true
-
 require "too_done/version"
 require "too_done/init_db"
-# require "too_done/models"
+require "too_done/user"
+require "too_done/session"
 
 require "thor"
 require "pry"
@@ -10,7 +9,7 @@ require "pry"
 module TooDone
   class App < Thor
 
-    desc "add 'TASK DESCRIPTION'", "Add a TASK to a todo list."
+    desc "add 'TASK'", "Add a TASK to a todo list."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list which the task will be filed under."
     option :date, :aliases => :d,
@@ -45,7 +44,8 @@ module TooDone
     option :completed, :aliases => :c, :default => false, :type => :boolean,
       :desc => "Whether or not to show already completed tasks."
     option :sort, :aliases => :s, :enum => ['history', 'overdue'],
-      :desc => "Sorting by 'history' (chronological) or 'overdue'. Limits results to those with a due date."
+      :desc => "Sorting by 'history' (chronological) or 'overdue'.
+      \t\t\t\t\tLimits results to those with a due date."
     def show
       # find or create the right todo list
       # show the tasks ordered as requested, default to reverse order (recently entered first)
@@ -58,7 +58,7 @@ module TooDone
       :desc => "The user which will be deleted (including lists and items)."
     def delete
       # BAIL if both list and user options are provided
-      # BAIL unless a list or user options is provided
+      # BAIL if neither list or user option is provided
       # find the matching user or list
       # BAIL if the user or list couldn't be found
       # delete them (and any dependents)
@@ -66,10 +66,16 @@ module TooDone
 
     desc "switch USER", "Switch session to manage USER's todo lists."
     def switch(username)
-      # find or create an account matching USER
-      # add an entry to the "sessions" table that logs in USER
+      user = User.find_or_create_by(name: username)
+      user.sessions.create
+    end
+
+    private
+    def current_user
+      Session.last.user
     end
   end
 end
 
+# binding.pry
 TooDone::App.start(ARGV)
