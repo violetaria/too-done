@@ -30,17 +30,17 @@ module TooDone
     def done
     end
 
-    desc "show", "Show the tasks on a todo list."
+    desc "show", "Show the tasks on a todo list in reverse chronological order."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be shown."
     option :completed, :aliases => :c, :default => false, :type => :boolean,
       :desc => "Whether or not to show already completed tasks."
-    option :sort, :aliases => :s,
-      :desc => "Optional sorting by 'history' (chronological, showing completed) or 'overdue'. Limits results to those with a due date."
+    option :sort, :aliases => :s, :enum => ['history', 'overdue'],
+      :desc => "Sorting by 'history' (chronological, showing completed) or 'overdue'. Limits results to those with a due date."
     def show
     end
 
-    desc "delete LIST_OR_USER", "Delete a todo list or a user."
+    desc "delete [LIST OR USER]", "Delete a todo list or a user."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list which will be deleted (including items)."
     option :user, :aliases => :u,
