@@ -1,5 +1,5 @@
 module TooDone
-  class TodoLists < ActiveRecord::Base
+  class TodoList < ActiveRecord::Base
     belongs_to :user
     has_many   :tasks
   end
