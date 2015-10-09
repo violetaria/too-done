@@ -20,9 +20,9 @@ module TooDone
       # find or create the right todo list
       # create a new item under that list, with optional date
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
-      binding.pry
-      #user.sessions.create
-      #todo_list = Todo_Lists.find_or_
+      todo_list.tasks.create(name: task, due_date: options[:date])
+      ## TODO make sure to validate that tasks are > 5 characters + start with a character
+      ## TODO make sure date is in the right format
     end
 
     desc "edit", "Edit a task from a todo list."
