@@ -19,6 +19,10 @@ module TooDone
     def add(task)
       # find or create the right todo list
       # create a new item under that list, with optional date
+      if !options[:date].nil? && (options[:date] =~ /^\d{4}-\d{2}-\d{2}$/).nil?
+        puts "ERROR: Due Date must be in format YYYY-MM-DD"
+        exit
+      end
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
       todo_list.tasks.create(name: task, due_date: options[:date])
       ## TODO make sure to validate that tasks are > 5 characters + start with a character
