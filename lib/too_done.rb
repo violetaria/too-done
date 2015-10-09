@@ -17,8 +17,9 @@ module TooDone
     option :date, :aliases => :d,
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
-      # find or create the right todo list
-      # create a new item under that list, with optional date
+      if(current_user.nil?)
+        ## TODO - make a function to check and deal with no current user (aka, blank db)
+      end
       if !options[:date].nil? && (options[:date] =~ /^\d{4}-\d{2}-\d{2}$/).nil?
         puts "ERROR: Due Date must be in format YYYY-MM-DD"
         exit
@@ -33,10 +34,22 @@ module TooDone
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be edited."
     def edit
-      # find the right todo list
+      ## TODO Check nil current user
+
       # BAIL if it doesn't exist and have tasks
       # display the tasks and prompt for which one to edit
       # allow the user to change the title, due date
+      todo_list = current_user.todo_lists.find_by(name: options[:list])
+      if(todo_list.nil? || todo_list.tasks.count==0)
+        puts "ERROR: #{current_user.name} does not have a #{options[:list]} list or it has no tasks!"
+        exit
+      end
+      puts "Open tasks. Pick an ID to edit."
+      open_tasks = todo_list.tasks.where(complete: false)
+      open_tasks.each do |task|
+        puts "#{task}"
+      end
+      binding.pry
     end
 
     desc "done", "Mark a task as completed."
