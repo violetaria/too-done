@@ -19,7 +19,8 @@ module TooDone
     def add(task)
       # find or create the right todo list
       # create a new item under that list, with optional date
-      #user = User.find_or_create_by(name: username)
+      todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
+      binding.pry
       #user.sessions.create
       #todo_list = Todo_Lists.find_or_
     end
