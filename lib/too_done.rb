@@ -35,21 +35,31 @@ module TooDone
       :desc => "The todo list whose tasks will be edited."
     def edit
       ## TODO Check nil current user
-
-      # BAIL if it doesn't exist and have tasks
-      # display the tasks and prompt for which one to edit
-      # allow the user to change the title, due date
       todo_list = current_user.todo_lists.find_by(name: options[:list])
-      if(todo_list.nil? || todo_list.tasks.count==0)
-        puts "ERROR: #{current_user.name} does not have a #{options[:list]} list or it has no tasks!"
-        exit
-      end
-      puts "Open tasks. Pick an ID to edit."
+      check_list_exists(todo_list)
+      puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
         puts "#{task}"
       end
-      binding.pry
+      print "Pick an ID to edit: "
+      id = STDIN.gets.chomp
+      task = open_tasks.find_by(id: id)
+      until id =~ /^\d$/ && !task.nil?
+        puts "ERROR: ID not valid."
+        print "Pick an ID to edit: "
+        id = STDIN.gets.chomp
+        task = open_tasks.find_by(id: id)
+      end
+      puts "Enter a new title: "
+      ## TODO make sure title is not nil?
+      title = STDIN.gets.chomp
+      puts "Enter a new due date: "
+      ## TODO check valid dates
+      due_date = STDIN.gets.chomp
+      task.name = title
+      task.due_date = due_date
+      task.save
     end
 
     desc "done", "Mark a task as completed."
@@ -96,6 +106,13 @@ module TooDone
     private
     def current_user
       Session.last.user
+    end
+
+    def check_list_exists(todo_list)
+      if(todo_list.nil? || todo_list.tasks.count==0)
+        puts "ERROR: #{current_user.name} does not have a #{options[:list]} list or it has no tasks!"
+        exit
+      end
     end
   end
 end
