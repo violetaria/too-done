@@ -35,8 +35,7 @@ module TooDone
       :desc => "The todo list whose tasks will be edited."
     def edit
       ## TODO Check nil current user
-      todo_list = current_user.todo_lists.find_by(name: options[:list])
-      check_list_exists(todo_list)
+      todo_list = find_list(options[:list])
       puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
@@ -108,11 +107,13 @@ module TooDone
       Session.last.user
     end
 
-    def check_list_exists(todo_list)
+    def find_list(name)
+      todo_list = current_user.todo_lists.find_by(name: name)
       if(todo_list.nil? || todo_list.tasks.count==0)
-        puts "ERROR: #{current_user.name} does not have a #{options[:list]} list or it has no tasks!"
+        puts "ERROR: #{current_user.name} does not have a #{name} list or it has no tasks!"
         exit
       end
+      todo_list
     end
   end
 end
