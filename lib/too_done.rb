@@ -36,11 +36,13 @@ module TooDone
     def edit
       ## TODO Check nil current user
       todo_list = find_list(options[:list])
+      # print stuff
       puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
         puts "#{task}"
       end
+      # get id
       print "Pick an ID to edit: "
       id = STDIN.gets.chomp
       task = open_tasks.find_by(id: id)
@@ -68,6 +70,26 @@ module TooDone
       # find the right todo list
       # BAIL if it doesn't exist and have tasks
       # display the tasks and prompt for which one(s?) to mark done
+      binding.pry
+      todo_list = find_list(options[:list])
+      # print stuff
+      puts "Open tasks:"
+      open_tasks = todo_list.tasks.where(complete: false)
+      open_tasks.each do |task|
+        puts "#{task}"
+      end
+      print "Choose ID to mark completed: "
+      id = STDIN.gets.chomp
+      task = open_tasks.find_by(id: id)
+      until id =~ /^\d$/ && !task.nil?
+        puts "ERROR: ID not valid."
+        print "Pick an ID to edit: "
+        id = STDIN.gets.chomp
+        task = open_tasks.find_by(id: id)
+      end
+      binding.pry
+      task.complete = true
+      task.save
     end
 
     desc "show", "Show the tasks on a todo list in reverse order."
