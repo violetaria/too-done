@@ -40,7 +40,7 @@ module TooDone
       puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
-        puts "#{task}"
+        puts task
       end
       task = get_task(open_tasks)
       puts "Enter a new title: "
@@ -66,7 +66,7 @@ module TooDone
       puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
-        puts "#{task}"
+        puts task
       end
       # TODO want to handle completing multiple tasks at the same time??
       task = get_task(open_tasks)
@@ -86,14 +86,13 @@ module TooDone
       # find or create the right todo list
       # show the tasks ordered as requested, default to reverse order (recently entered first)
       todo_list = find_list(options[:list])
-      if options[:sort] == "history"
-        tasks = todo_list.tasks.where(complete: options[:completed]).order(id: :desc)
-      else
+      if options[:sort] == "overdue"
         tasks = todo_list.tasks.where(complete: options[:completed]).where.not(due_date: nil).order(id: :desc)
+      else
+        tasks = todo_list.tasks.where(complete: options[:completed]).order(id: :desc)
       end
       tasks.each do |task|
-        puts "#{task}"
-        binding.pry
+        puts task
       end
 
     end
