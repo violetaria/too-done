@@ -42,16 +42,7 @@ module TooDone
       open_tasks.each do |task|
         puts "#{task}"
       end
-      # get id
-      print "Pick an ID to edit: "
-      id = STDIN.gets.chomp
-      task = open_tasks.find_by(id: id)
-      until id =~ /^\d$/ && !task.nil?
-        puts "ERROR: ID not valid."
-        print "Pick an ID to edit: "
-        id = STDIN.gets.chomp
-        task = open_tasks.find_by(id: id)
-      end
+      task = get_task(open_tasks)
       puts "Enter a new title: "
       ## TODO make sure title is not nil?
       title = STDIN.gets.chomp
@@ -72,22 +63,13 @@ module TooDone
       # display the tasks and prompt for which one(s?) to mark done
       binding.pry
       todo_list = find_list(options[:list])
-      # print stuff
       puts "Open tasks:"
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
         puts "#{task}"
       end
-      print "Choose ID to mark completed: "
-      id = STDIN.gets.chomp
-      task = open_tasks.find_by(id: id)
-      until id =~ /^\d$/ && !task.nil?
-        puts "ERROR: ID not valid."
-        print "Pick an ID to edit: "
-        id = STDIN.gets.chomp
-        task = open_tasks.find_by(id: id)
-      end
-      binding.pry
+      # TODO want to handle completing multiple tasks at the same time??
+      task = get_task(open_tasks)
       task.complete = true
       task.save
     end
@@ -103,6 +85,17 @@ module TooDone
     def show
       # find or create the right todo list
       # show the tasks ordered as requested, default to reverse order (recently entered first)
+      todo_list = find_list(options[:list])
+      if options[:sort] == "history"
+        tasks = todo_list.tasks.where(complete: options[:completed]).order(id: :desc)
+      else
+        tasks = todo_list.tasks.where(complete: options[:completed]).where.not(due_date: nil).order(id: :desc)
+      end
+      tasks.each do |task|
+        puts "#{task}"
+        binding.pry
+      end
+
     end
 
     desc "delete [LIST OR USER]", "Delete a todo list or a user."
@@ -136,6 +129,19 @@ module TooDone
         exit
       end
       todo_list
+    end
+
+    def get_task(open_tasks)
+      print "Choose task ID to mark completed: "
+      id = STDIN.gets.chomp
+      task = open_tasks.find_by(id: id)
+      until id =~ /^\d$/ && !task.nil?
+        puts "ERROR: ID not valid."
+        print "Pick an ID to edit: "
+        id = STDIN.gets.chomp
+        task = open_tasks.find_by(id: id)
+      end
+      task
     end
   end
 end
