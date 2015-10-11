@@ -7,6 +7,7 @@ require "too_done/task"
 
 require "thor"
 require "pry"
+require "date"
 
 module TooDone
   class App < Thor
@@ -17,24 +18,21 @@ module TooDone
     option :date, :aliases => :d,
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
-      if(current_user.nil?)
-        ## TODO - make a function to check and deal with no current user (aka, blank db)
-      end
-      if !options[:date].nil? && (options[:date] =~ /^\d{4}-\d{2}-\d{2}$/).nil?
+      check_for_user
+      if !valid_date?
         puts "ERROR: Due Date must be in format YYYY-MM-DD"
         exit
       end
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
       todo_list.tasks.create(name: task, due_date: options[:date])
       ## TODO make sure to validate that tasks are > 5 characters + start with a character
-      ## TODO make sure date is in the right format
     end
 
     desc "edit", "Edit a task from a todo list."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be edited."
     def edit
-      ## TODO Check nil current user
+      check_for_user
       todo_list = find_list(options[:list])
       # print stuff
       puts "Open tasks:"
@@ -49,29 +47,24 @@ module TooDone
       puts "Enter a new due date: "
       ## TODO check valid dates
       due_date = STDIN.gets.chomp
-      task.name = title
-      task.due_date = due_date
-      task.save
-    end
+      task.update(name: title, due_date: due_date)
+      end
 
     desc "done", "Mark a task as completed."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be completed."
     def done
-      # find the right todo list
-      # BAIL if it doesn't exist and have tasks
-      # display the tasks and prompt for which one(s?) to mark done
-      binding.pry
+      check_for_user
       todo_list = find_list(options[:list])
       puts "Open tasks:"
+      #TODO call show here instead
       open_tasks = todo_list.tasks.where(complete: false)
       open_tasks.each do |task|
         puts task
       end
       # TODO want to handle completing multiple tasks at the same time??
       task = get_task(open_tasks)
-      task.complete = true
-      task.save
+      task.update(complete: true)
     end
 
     desc "show", "Show the tasks on a todo list in reverse order."
@@ -130,13 +123,23 @@ module TooDone
       todo_list
     end
 
+    def check_for_user
+      if(current_user.nil?)
+        puts "ERROR: No users loaded. Please use the SWITCH command to add a user"
+      end
+    end
+
+    def valid_date?(date)
+      !date.nil? && (date =~ /^\d{4}-\d{2}-\d{2}$/).nil?
+    end
+
     def get_task(open_tasks)
-      print "Choose task ID to mark completed: "
+      print "Choose task ID: "
       id = STDIN.gets.chomp
       task = open_tasks.find_by(id: id)
       until id =~ /^\d$/ && !task.nil?
         puts "ERROR: ID not valid."
-        print "Pick an ID to edit: "
+        print "Choose task ID: "
         id = STDIN.gets.chomp
         task = open_tasks.find_by(id: id)
       end

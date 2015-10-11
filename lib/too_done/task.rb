@@ -6,5 +6,7 @@ module TooDone
     def to_s
       "id: #{self.id} - name: #{self.name} - due by: #{self.due_date.nil? ? 'n/a' : self.due_date}"
     end
+
+
   end
 end
