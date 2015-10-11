@@ -32,13 +32,7 @@ module TooDone
       :desc => "The todo list whose tasks will be edited."
     def edit
       check_for_user
-      todo_list = find_list(options[:list])
-
-      puts "Open tasks:"
-      open_tasks = todo_list.tasks.where(complete: false)
-      open_tasks.each do |task|
-        puts task
-      end
+      open_tasks = invoke "show", [], :list => options[:list]
       task = get_task(open_tasks)
       print "Enter a new title: "
       title = STDIN.gets.chomp
@@ -62,8 +56,7 @@ module TooDone
       :desc => "The todo list whose tasks will be completed."
     def done
       check_for_user
-      puts "Open tasks:"
-      open_tasks = invoke "show", :list => options[:list]
+      open_tasks = invoke "show", [], :list => options[:list]
       # TODO want to handle completing multiple tasks at the same time??
       task = get_task(open_tasks)
       task.update(complete: true)
@@ -74,16 +67,18 @@ module TooDone
       :desc => "The todo list whose tasks will be shown."
     option :completed, :aliases => :c, :default => false, :type => :boolean,
       :desc => "Whether or not to show already completed tasks."
-    option :sort, :aliases => :s, :enum => ['history', 'overdue'],
+    option :sort, :aliases => :s, :default => "history", :enum => ['history', 'overdue'],
       :desc => "Sorting by 'history' (chronological) or 'overdue'.
       \t\t\t\t\tLimits results to those with a due date."
     def show
-      todo_list = find_list(options[:list])
+      todo_list = current_user.find_list(options[:list])
       if options[:sort] == "overdue"
-        tasks = todo_list.tasks.where(complete: options[:completed]).where.not(due_date: nil).order(id: :desc)
+        tasks = todo_list.tasks.where(complete: options[:completed]).where("due_date < ?", DateTime.now).where.not(due_date: nil).order(id: :desc)
       else
         tasks = todo_list.tasks.where(complete: options[:completed]).order(id: :desc)
       end
+      message = options[:completed] ? "Completed Tasks" : "Open Tasks"
+      puts message + " [sorted by: " + options[:sort] + "]"
       tasks.each do |task|
         puts task
       end
@@ -96,11 +91,6 @@ module TooDone
     option :user, :aliases => :u,
       :desc => "The user which will be deleted (including lists and items)."
     def delete
-      # BAIL if both list and user options are provided
-      # BAIL if neither list or user option is provided
-      # find the matching user or list
-      # BAIL if the user or list couldn't be found
-      # delete them (and any dependents)
       if(!options[:user].nil? && options[:list]!="*default*") || (options[:user].nil? && options[:list].nil?)
         puts "ERROR: Please specify either a list or a user, but not both!"
         exit
@@ -132,15 +122,6 @@ module TooDone
       Session.last.user
     end
 
-    def find_list(name)
-      todo_list = current_user.todo_lists.find_by(name: name)
-      if(todo_list.nil? || todo_list.tasks.count==0)
-        puts "ERROR: #{current_user.name} does not have a #{name} list or it has no tasks!"
-        exit
-      end
-      todo_list
-    end
-
     def check_for_user
       if(current_user.nil?)
         puts "ERROR: No users loaded. Please use the SWITCH command to add a user"
@@ -157,7 +138,6 @@ module TooDone
       id = STDIN.gets.chomp
       task = open_tasks.find_by(id: id)
       until id =~ /^\d+$/ && !task.nil?
-        binding.pry
         puts "ERROR: ID not valid."
         print "Choose task ID: "
         id = STDIN.gets.chomp
