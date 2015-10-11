@@ -58,8 +58,13 @@ module TooDone
       check_for_user
       open_tasks = invoke "show", [], :list => options[:list]
       # TODO want to handle completing multiple tasks at the same time??
+      if open_tasks.count==0
+        puts "ERROR: No open tasks"
+        exit
+      end
       task = get_task(open_tasks)
       task.update(complete: true)
+      puts "Task #{task.name} completed."
     end
 
     desc "show", "Show the tasks on a todo list in reverse order."
@@ -78,7 +83,7 @@ module TooDone
         tasks = todo_list.tasks.where(complete: options[:completed]).order(id: :desc)
       end
       message = options[:completed] ? "Completed Tasks" : "Open Tasks"
-      puts message + " [sorted by: " + options[:sort] + "]"
+      puts "#{todo_list.name} List => " + message + " [sorted by: " + options[:sort] + "]"
       tasks.each do |task|
         puts task
       end
@@ -145,6 +150,7 @@ module TooDone
       end
       task
     end
+
   end
 end
 
