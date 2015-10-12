@@ -17,13 +17,13 @@ module TooDone
     desc "add 'TASK'", "Add a TASK to a todo list."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list which the task will be filed under."
-    option :tags, :aliases => :t, :type => :array
+    option :tags, :aliases => :t, :type => :array,
       :desc => "A set of tag(s) which will be applied to the task.  Enter tags seperated by commas."
     option :date, :aliases => :d,
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
-      check_for_user
-      error_and_exit( "ERROR: Due Date must be in format YYYY-MM-DD") unless f !valid_date?(options[:date])
+      error_and_exit("ERROR: No user session.") unless Session.last
+      error_and_exit("ERROR: Due Date must be in format YYYY-MM-DD") unless valid_date?(options[:date])
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
       todo_list.tasks.create(name: task, due_date: options[:date])
   #    options[:tags].each do |tag|
@@ -36,7 +36,7 @@ module TooDone
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be edited."
     def edit
-      check_for_user
+      error_and_exit("ERROR: No user session.") unless Session.last
       open_tasks = invoke "show", [], :list => options[:list]
       task = get_task(open_tasks)
       print "Enter a new title: "
@@ -60,7 +60,7 @@ module TooDone
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list whose tasks will be completed."
     def done
-      check_for_user
+      error_and_exit("ERROR: No user session.") unless Session.last
       open_tasks = invoke "show", [], :list => options[:list]
       # TODO want to handle completing multiple tasks at the same time??
       if open_tasks.count==0
@@ -81,6 +81,7 @@ module TooDone
       :desc => "Sorting by 'history' (chronological) or 'overdue'.
       \t\t\t\t\tLimits results to those with a due date."
     def show
+      error_and_exit("ERROR: No user session.") unless Session.last
       todo_list = current_user.todo_lists.find_by(name: options[:list])
       error_and_exit("ERROR: \'#{options[:list]}\' list not found or empty!") unless todo_list
       if options[:sort] == "overdue"
@@ -102,11 +103,11 @@ module TooDone
     option :user, :aliases => :u,
       :desc => "The user which will be deleted (including lists and items)."
     def delete
+      error_and_exit("ERROR: No user session.") unless Session.last
       if(!options[:user].nil? && options[:list]!="*default*") || (options[:user].nil? && options[:list].nil?)
         puts "ERROR: Please specify either a list or a user, but not both!"
         exit
       end
-      check_for_user
       if(!options[:user].nil?)
         delete = User.find_by(name: options[:user])
         message = "user: #{options[:user]}"
@@ -141,13 +142,6 @@ module TooDone
       Session.last.user
     end
 
-    def check_for_user
-      if(current_user.nil?)
-        puts "ERROR: No users loaded. Please use the SWITCH command to add a user"
-        exit
-      end
-    end
-
     def valid_date?(date)
       date.nil? || !(date =~ /^\d{4}-\d{2}-\d{2}$/.nil?)
     end
@@ -170,6 +164,15 @@ module TooDone
       exit
     end
 
+    def prompt_user(text,regex)
+      print text
+      input = STDIN.gets.chomp
+      until input =~ regex
+        print text
+        input = STIN.gets.chomp
+      end
+      input
+    end
 
   end
 end
