@@ -4,6 +4,8 @@ require "too_done/user"
 require "too_done/session"
 require "too_done/todo_list"
 require "too_done/task"
+require "too_done/tag"
+require "too_done/todo_tag"
 
 require "thor"
 require "pry"
@@ -15,16 +17,19 @@ module TooDone
     desc "add 'TASK'", "Add a TASK to a todo list."
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list which the task will be filed under."
+    option :tags, :aliases => :t, :type => :array
+      :desc => "A set of tag(s) which will be applied to the task.  Enter tags seperated by commas."
     option :date, :aliases => :d,
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
       check_for_user
-      if !valid_date?(options[:date])
-        puts "ERROR: Due Date must be in format YYYY-MM-DD"
-        exit
-      end
+      error_and_exit( "ERROR: Due Date must be in format YYYY-MM-DD") unless f !valid_date?(options[:date])
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
       todo_list.tasks.create(name: task, due_date: options[:date])
+  #    options[:tags].each do |tag|
+  #        current_user.tags.find_or_create_by(tag)
+  #    end
+
     end
 
     desc "edit", "Edit a task from a todo list."
@@ -76,7 +81,8 @@ module TooDone
       :desc => "Sorting by 'history' (chronological) or 'overdue'.
       \t\t\t\t\tLimits results to those with a due date."
     def show
-      todo_list = current_user.find_list(options[:list])
+      todo_list = current_user.todo_lists.find_by(name: options[:list])
+      error_and_exit("ERROR: \'#{options[:list]}\' list not found or empty!") unless todo_list
       if options[:sort] == "overdue"
         tasks = todo_list.tasks.where(complete: options[:completed]).where("due_date < ?", DateTime.now).where.not(due_date: nil).order(id: :desc)
       else
@@ -105,7 +111,8 @@ module TooDone
         delete = User.find_by(name: options[:user])
         message = "user: #{options[:user]}"
       else
-        delete = TodoList.find_by(name: options[:list])
+        ## TODO fix this, it currently deletes the list regardless of which user!!!!
+        delete = current_user.todo_lists.find_by(name: options[:list])
         message = "list: #{options[:list]}"
       end
       if(delete.nil?)
@@ -121,6 +128,13 @@ module TooDone
       user = User.find_or_create_by(name: username)
       user.sessions.create
     end
+
+=begin
+    def show
+      tasks = current_user.todo_lists.find_or_create_by(name: options[:list]).tasks
+      return unless tasks
+    end
+=end
 
     private
     def current_user
@@ -150,6 +164,12 @@ module TooDone
       end
       task
     end
+
+    def error_and_exit(text)
+      puts text
+      exit
+    end
+
 
   end
 end
