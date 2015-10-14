@@ -38,7 +38,10 @@ module TooDone
     def edit
       error_and_exit("ERROR: No user session.") unless Session.last
       open_tasks = invoke "show", [], :list => options[:list]
-      task = get_task(open_tasks)
+      regex = /^[#{open_tasks.select(:id).pluck(:id).join}]$/
+      id = prompt_user("Pick a task to edit: ",regex)
+      task = open_tasks.find_by(id: id)
+
       print "Enter a new title: "
       title = STDIN.gets.chomp
       while title.nil?
@@ -112,14 +115,11 @@ module TooDone
         delete = User.find_by(name: options[:user])
         message = "user: #{options[:user]}"
       else
-        ## TODO fix this, it currently deletes the list regardless of which user!!!!
         delete = current_user.todo_lists.find_by(name: options[:list])
         message = "list: #{options[:list]}"
       end
-      if(delete.nil?)
-        puts "ERROR: #{message} not found"
-        exit
-      end
+      error_and_exit("ERROR: #{message} not found") if(delete.nil?)
+
       delete.destroy
       puts "Deletion of #{message} completed."
     end
@@ -147,6 +147,7 @@ module TooDone
     end
 
     def get_task(open_tasks)
+      binding.pry
       print "Choose task ID: "
       id = STDIN.gets.chomp
       task = open_tasks.find_by(id: id)
@@ -165,11 +166,12 @@ module TooDone
     end
 
     def prompt_user(text,regex)
+      #binding.pry
       print text
       input = STDIN.gets.chomp
       until input =~ regex
         print text
-        input = STIN.gets.chomp
+        input = STDIN.gets.chomp
       end
       input
     end
