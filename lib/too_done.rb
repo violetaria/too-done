@@ -23,7 +23,7 @@ module TooDone
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
       error_and_exit("ERROR: No user session.") unless Session.last
-      error_and_exit("ERROR: Due Date must be in format YYYY-MM-DD") unless valid_date?(options[:date])
+      error_and_exit("ERROR: Due Date must be in format YYYY-MM-DD") unless options[:date] =~ /^$|^\d{4}-\d{2}-\d{2}$/
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
       todo_list.tasks.create(name: task, due_date: options[:date])
   #    options[:tags].each do |tag|
@@ -38,24 +38,11 @@ module TooDone
     def edit
       error_and_exit("ERROR: No user session.") unless Session.last
       open_tasks = invoke "show", [], :list => options[:list]
-      regex = /^[#{open_tasks.select(:id).pluck(:id).join}]$/
+      regex = /^[#{open_tasks.pluck(:id).join}]$/
       id = prompt_user("Pick a task to edit: ",regex)
       task = open_tasks.find_by(id: id)
-
-      print "Enter a new title: "
-      title = STDIN.gets.chomp
-      while title.nil?
-        puts "ERROR: Title cannot be blank"
-        print "Enter a new title: "
-        title = STDIN.gets.chomp
-      end
-      print "Enter a new due date: "
-      due_date = STDIN.gets.chomp
-      until valid_date?(due_date)
-        puts "ERROR: Due Date must be in format YYYY-MM-DD"
-        print "Enter a new due date: "
-        due_date = STDIN.gets.chomp
-      end
+      title = prompt_user("Enter a new title: ",/^.+$/)
+      due_date = prompt_user("Enter a new due date (or nil for none): ",/^$|^\d{4}-\d{2}-\d{2}$/)
       task.update(name: title, due_date: due_date)
     end
 
@@ -66,13 +53,12 @@ module TooDone
       error_and_exit("ERROR: No user session.") unless Session.last
       open_tasks = invoke "show", [], :list => options[:list]
       # TODO want to handle completing multiple tasks at the same time??
-      if open_tasks.count==0
-        puts "ERROR: No open tasks"
-        exit
-      end
-      task = get_task(open_tasks)
+      error_and_exit("ERROR: No open tasks") if open_tasks.count==0
+      regex = /^[#{open_tasks.pluck(:id).join}]$/
+      id = prompt_user("Pick a task to edit: ",regex)
+      task = open_tasks.find_by(id: id)
       task.update(complete: true)
-      puts "Task #{task.name} completed."
+      puts "Task: #{id} - #{task.name} completed."
     end
 
     desc "show", "Show the tasks on a todo list in reverse order."
@@ -130,34 +116,10 @@ module TooDone
       user.sessions.create
     end
 
-=begin
-    def show
-      tasks = current_user.todo_lists.find_or_create_by(name: options[:list]).tasks
-      return unless tasks
-    end
-=end
 
     private
     def current_user
       Session.last.user
-    end
-
-    def valid_date?(date)
-      date.nil? || !(date =~ /^\d{4}-\d{2}-\d{2}$/.nil?)
-    end
-
-    def get_task(open_tasks)
-      binding.pry
-      print "Choose task ID: "
-      id = STDIN.gets.chomp
-      task = open_tasks.find_by(id: id)
-      until id =~ /^\d+$/ && !task.nil?
-        puts "ERROR: ID not valid."
-        print "Choose task ID: "
-        id = STDIN.gets.chomp
-        task = open_tasks.find_by(id: id)
-      end
-      task
     end
 
     def error_and_exit(text)
@@ -166,7 +128,6 @@ module TooDone
     end
 
     def prompt_user(text,regex)
-      #binding.pry
       print text
       input = STDIN.gets.chomp
       until input =~ regex
