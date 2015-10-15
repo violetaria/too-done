@@ -6,7 +6,7 @@ module TooDone
 
     # overwrites the to_s function so it prints out nicely
     def to_s
-      "id: #{self.id} - name: #{self.name} - due by: #{self.due_date.nil? ? 'n/a' : self.due_date}"
+      "ID: #{self.id} - Name: #{self.name} - Due: #{self.due_date.nil? ? 'n/a' : self.due_date} - Tags: #{self.tags.pluck(:name).join(", ")}"
     end
 
 

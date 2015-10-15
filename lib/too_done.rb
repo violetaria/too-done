@@ -18,18 +18,18 @@ module TooDone
     option :list, :aliases => :l, :default => "*default*",
       :desc => "The todo list which the task will be filed under."
     option :tags, :aliases => :t, :type => :array,
-      :desc => "A set of tag(s) which will be applied to the task.  Enter tags seperated by commas."
+      :desc => "A set of tag(s) which will be applied to the task.  Enter tags separated by spaces."
     option :date, :aliases => :d,
       :desc => "A Due Date in YYYY-MM-DD format."
     def add(task)
       error_and_exit("ERROR: No user session.") unless Session.last
-      error_and_exit("ERROR: Due Date must be in format YYYY-MM-DD") unless options[:date] =~ /^$|^\d{4}-\d{2}-\d{2}$/
+      error_and_exit("ERROR: Due Date must be in format YYYY-MM-DD") unless options[:date].nil? || options[:date] =~ /^$|^\d{4}-\d{2}-\d{2}$/
       todo_list = current_user.todo_lists.find_or_create_by(name: options[:list])
-      todo_list.tasks.create(name: task, due_date: options[:date])
-  #    options[:tags].each do |tag|
-  #        current_user.tags.find_or_create_by(tag)
-  #    end
-
+      new_task = todo_list.tasks.create(name: task, due_date: options[:date])
+      options[:tags].each do |tag_name|
+        tag = Tag.find_or_create_by(name: tag_name)
+        new_task.todo_tags.create(tag: tag)
+      end
     end
 
     desc "edit", "Edit a task from a todo list."
@@ -140,5 +140,5 @@ module TooDone
   end
 end
 
-# binding.pry
+#binding.pry
 TooDone::App.start(ARGV)
